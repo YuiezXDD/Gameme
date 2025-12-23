@@ -104,13 +104,21 @@ task.spawn(function()
 
 			task.wait(1)
 
-			-- B : SUBMIT QUEST
+			-- B : SUBMIT QUEST (แก้ตามที่ขอ)
 			moveTo(PointB)
 			task.wait(2)
+
 			pressE()
 			task.wait(0.3)
-			holdE(3)
-			task.wait(2)
+
+			-- กด E ค้างซ้ำจนกว่า Apple จะหาย
+			while AUTO_ENABLED and hasItem(ITEM_NAME) do
+				holdE(3)
+				task.wait(0.3)
+			end
+
+			-- ลดเวลารอเหลือ 1 วิ
+			task.wait(1)
 
 			-- FINISH
 			ReplicatedStorage:WaitForChild("Remote")
