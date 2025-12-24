@@ -22,6 +22,7 @@ local COOLDOWN = 30
 local AUTO_ENABLED = false
 local IS_RUNNING = false
 local CAMERA_LOCKED = false
+local ALIVE = true
 
 --// CHARACTER HANDLER
 local character, humanoid, hrp
@@ -30,8 +31,10 @@ local function bindCharacter(char)
 	character = char
 	humanoid = char:WaitForChild("Humanoid")
 	hrp = char:WaitForChild("HumanoidRootPart")
+	ALIVE = true
 
 	humanoid.Died:Connect(function()
+		ALIVE = false
 		AUTO_ENABLED = false
 		IS_RUNNING = false
 		unlockCamera()
@@ -77,7 +80,9 @@ local function moveTo(pos)
 	humanoid:MoveTo(pos)
 	repeat
 		RunService.Heartbeat:Wait()
-	until (hrp.Position - pos).Magnitude <= ACCEPT_DISTANCE or not AUTO_ENABLED
+	until (hrp.Position - pos).Magnitude <= ACCEPT_DISTANCE
+		or not AUTO_ENABLED
+		or not ALIVE
 	humanoid:Move(Vector3.zero, false)
 end
 
@@ -89,48 +94,55 @@ end
 --// MAIN LOOP
 task.spawn(function()
 	while true do
-		if AUTO_ENABLED and not IS_RUNNING then
+		if AUTO_ENABLED and not IS_RUNNING and ALIVE then
 			IS_RUNNING = true
 			lockCamera()
 
 			-- A : GET ITEM
 			moveTo(PointA)
+			if not AUTO_ENABLED or not ALIVE then goto stop end
+
 			pressE()
-			while AUTO_ENABLED and not hasItem(ITEM_NAME) do
+			while AUTO_ENABLED and ALIVE and not hasItem(ITEM_NAME) do
 				task.wait(0.2)
 				pressE()
 			end
-			if not AUTO_ENABLED then break end
+			if not AUTO_ENABLED or not ALIVE then goto stop end
 
 			task.wait(1)
 
-			-- B : SUBMIT QUEST (แก้ตามที่ขอ)
-			moveTo(PointB)
-			task.wait(2)
+			-- B : SUBMIT QUEST (ปรับตามที่ขอ)
+			while AUTO_ENABLED and ALIVE and hasItem(ITEM_NAME) do
+				moveTo(PointB)
+				if not AUTO_ENABLED or not ALIVE then goto stop end
 
-			pressE()
-			task.wait(0.3)
-
-			-- กด E ค้างซ้ำจนกว่า Apple จะหาย
-			while AUTO_ENABLED and hasItem(ITEM_NAME) do
+				task.wait(2)
+				pressE()
+				task.wait(0.3)
 				holdE(3)
 				task.wait(0.3)
 			end
 
+			if not AUTO_ENABLED or not ALIVE then goto stop end
+
 			-- ลดเวลารอเหลือ 1 วิ
 			task.wait(1)
 
-			-- FINISH
-			ReplicatedStorage:WaitForChild("Remote")
-				:WaitForChild("FruitMinigameEvent")
-				:FireServer("Finish")
+			-- FINISH (ยิงเฉพาะเมื่อยังเปิดและยังไม่ตาย)
+			if AUTO_ENABLED and ALIVE then
+				ReplicatedStorage
+					:WaitForChild("Remote")
+					:WaitForChild("FruitMinigameEvent")
+					:FireServer("Finish")
+			end
 
 			-- COOLDOWN
 			for i = COOLDOWN, 1, -1 do
-				if not AUTO_ENABLED then break end
+				if not AUTO_ENABLED or not ALIVE then break end
 				task.wait(1)
 			end
 
+			::stop::
 			unlockCamera()
 			IS_RUNNING = false
 		end
