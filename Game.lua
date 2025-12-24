@@ -11,7 +11,7 @@ local camera = workspace.CurrentCamera
 
 --// QUEST POINTS
 local PointA = Vector3.new(63, 254, -664)
-local PointB = Vector3.new(66, 254, -666)
+local PointB = Vector3.new(67, 254, -667)
 
 --// CONFIG
 local ACCEPT_DISTANCE = 5
